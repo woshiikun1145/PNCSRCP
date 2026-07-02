@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PNCSRCP - 巧克力服铁路建设计划公示</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f0f2f5;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            background: #1e3c72;
+            color: white;
+            padding: 16px 24px;
+            border-radius: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            gap: 12px;
+        }
+        header .left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        header .sub {
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .lang-select {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        .lang-select option {
+            background: #1e3c72;
+            color: white;
+        }
+        .btn-map {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.4);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-map:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .auth-btn {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+        .auth-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .user-email {
+            font-size: 0.9rem;
+        }
+        .controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .controls button {
+            background: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+        .controls button:hover {
+            background: #e0e7ff;
+        }
+        .controls .add-btn {
+            background: #1e3c72;
+            color: white;
+        }
+        .controls .add-btn:hover {
+            background: #2a4a8a;
+        }
+        .group-card {
+            background: white;
+            border-radius: 24px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .group-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e3c72;
+            border-bottom: 3px solid #e0e7ff;
+            padding-bottom: 10px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .plan-item {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .plan-item:last-child {
+            border-bottom: none;
+        }
+        .plan-info {
+            flex: 2;
+            min-width: 200px;
+        }
+        .plan-line {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        .plan-target {
+            color: #555;
+            font-size: 0.9rem;
+            margin-top: 4px;
+        }
+        .plan-status {
+            padding: 4px 14px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        .status-planning { background: #fff3e0; color: #e65100; }
+        .status-building { background: #e3f2fd; color: #0d47a1; }
+        .status-done { background: #e8f5e9; color: #1b5e20; }
+        .status-paused { background: #fce4ec; color: #b71c1c; }
+        .plan-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: 12px;
+        }
+        .plan-actions button {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: #555;
+        }
+        .plan-actions .edit-btn:hover { background: #e0e7ff; }
+        .plan-actions .del-btn:hover { background: #ffcdd2; color: #c62828; }
+        .empty-msg {
+            color: #888;
+            text-align: center;
+            padding: 40px 0;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        .modal-content {
+            background: white;
+            padding: 28px;
+            border-radius: 28px;
+            width: 500px;
+            max-width: 92%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-content h3 { margin-top: 0; }
+        .modal-content label { display: block; margin: 12px 0 4px; font-weight: 500; }
+        .modal-content input, .modal-content select, .modal-content textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            font-size: 0.95rem;
+        }
+        .modal-footer {
+            margin-top: 20px;
+            text-align: right;
+        }
+        .modal-footer button {
+            padding: 8px 24px;
+            border: none;
+            border-radius: 40px;
+            cursor: pointer;
+            margin-left: 8px;
+        }
+        .btn-confirm { background: #1e3c72; color: white; }
+        .btn-cancel { background: #e0e0e0; color: #333; }
+        .close { float: right; font-size: 24px; cursor: pointer; }
+        .footnote {
+            text-align: center;
+            margin-top: 30px;
+            color: #777;
+            font-size: 0.85rem;
+        }
+        @media (max-width: 600px) {
+            header h1 { font-size: 1.2rem; }
+            .plan-item { flex-direction: column; align-items: stretch; }
+            .plan-actions { justify-content: flex-end; margin-top: 8px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <div class="left">
+            <h1>📢 PNCSRCP 巧克力服服铁路建设计划公示</h1>
+            <div class="sub" id="headerSub">Public Notice of Chocolate Server Railway Construction Plan<br>
+            ⚠️ 尚不完整支持手机端和过旧的浏览器！<br>
+            ⚠️ 近期数据库出现性能下降的问题，详见：https://status.supabase.com/
+            </div>
+        </div>
+        <div class="header-actions">
+            <a href="https://csrtsp.pages.dev" class="btn-map" id="mapBtn">🗺️ 返回地图</a>
+            <select id="langSelect" class="lang-select">
+                <option value="zh">Language 语言：中文</option>
+                <option value="en">语言 Language: English</option>
+            </select>
+            <span class="user-email" id="userDisplay" style="display:none;"></span>
+            <button class="auth-btn" id="loginBtn">登录 / 注册</button>
+            <button class="auth-btn" id="logoutBtn" style="display:none;">登出</button>
+        </div>
+    </header>
+
+    <div class="controls">
+        <button class="add-btn" id="addPlanBtn">➕ 新增计划</button>
+        <button id="refreshBtn">🔄 刷新</button>
+    </div>
+
+    <div id="planList"></div>
+
+    <div class="footnote" id="footerNote">by woshiikun_1145 | Alpha Test A2601</div>
+</div>
+
+<!-- 登录模态框 -->
+<div id="authModal" class="modal">
+    <div class="modal-content">
+        <span class="close" id="authModalClose">&times;</span>
+        <h3 id="authTitle">登录 / 注册</h3>
+        <label id="emailLabel">邮箱</label>
+        <input type="email" id="authEmail" placeholder="your@email.com">
+        <label id="passwordLabel">密码</label>
+        <input type="password" id="authPassword" placeholder="至少6位">
+        <div style="margin-top:16px;">
+            <button id="authLoginBtn" style="background:#1e3c72;color:white;padding:8px 24px;border:none;border-radius:40px;cursor:pointer;">登录</button>
+            <button id="authRegisterBtn" style="background:#ff9800;color:white;padding:8px 24px;border:none;border-radius:40px;cursor:pointer;margin-left:8px;">注册</button>
+        </div>
+        <div id="authError" style="color:red;margin-top:10px;"></div>
+        <div class="modal-footer">
+            <button class="btn-cancel" id="authModalCancel">取消</button>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑/新增模态框 -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <span class="close" id="editModalClose">&times;</span>
+        <h3 id="editModalTitle">编辑计划</h3>
+        <input type="hidden" id="editId">
+        <label id="editOperatorLabel">运营集团</label>
+        <input type="text" id="editOperator" placeholder="例如：Steve Rail">
+        <label id="editLineLabel">线路名称</label>
+        <input type="text" id="editLine" placeholder="例如：1号线">
+        <label id="editStatusLabel">建设状态</label>
+        <select id="editStatus">
+            <option value="规划中">规划中</option>
+            <option value="建设中">建设中</option>
+            <option value="已完成">已完成</option>
+            <option value="暂停">暂停</option>
+        </select>
+        <label id="editTargetLabel">目标描述</label>
+        <textarea id="editTarget" rows="2" placeholder="（选填）例如：正在进行规划"></textarea>
+        <div class="modal-footer">
+            <button class="btn-cancel" id="editModalCancel">取消</button>
+            <button class="btn-confirm" id="editModalConfirm">保存</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ========== Supabase 配置 ==========
+    const SUPABASE_URL = 'https://ljvjixaobfqwnhzzzhdm.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_XQPi0gKgF6l9IQtY7rjLRw_wH7GExSD';
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ========== 语言翻译 ==========
+    let currentLang = 'zh';
+    const i18n = {
+        zh: {
+            headerSub: 'Public Notice of Chocolate Server Railway Construction Plan<br>⚠️ 尚不完整支持手机端和过旧的浏览器！<br>⚠️ 近期数据库出现性能下降的问题，详见：https://status.supabase.com/',
+            mapBtn: '🗺️ 返回地图',
+            loginBtn: '登录 / 注册',
+            logoutBtn: '登出',
+            addPlan: '➕ 新增计划',
+            refresh: '🔄 刷新',
+            footerNote: '数据来源：巧克力服务器 · 建设计划公示',
+            authTitle: '登录 / 注册',
+            emailLabel: '邮箱',
+            passwordLabel: '密码',
+            emailPlaceholder: 'example@example.com',
+            passwordPlaceholder: '至少6位',
+            login: '登录',
+            register: '注册',
+            cancel: '取消',
+            editTitle: '编辑计划',
+            addTitle: '新增计划',
+            operatorLabel: '运营集团',
+            lineLabel: '线路名称',
+            statusLabel: '建设状态',
+            targetLabel: '目标描述',
+            operatorPlaceholder: '例如：Steve Rail',
+            linePlaceholder: '例如：1号线',
+            targetPlaceholder: '(选填) 例如：正在进行规划',
+            save: '保存',
+            emptyMsg: '暂无建设计划，点击「新增计划」添加',
+            loadError: '加载失败，请刷新重试',
+            confirmDelete: '确定删除该计划吗？',
+            fillRequired: '请填写运营集团和线路名称',
+            saveSuccess: '保存成功',
+            deleteSuccess: '删除成功',
+            statusOptions: {
+                '规划中': '规划中',
+                '建设中': '建设中',
+                '已完成': '已完成',
+                '暂停': '暂停'
+            }
+        },
+        en: {
+            headerSub: 'Public Notice of Chocolate Server Railway Construction Plan<br>⚠️ Incomplete mobile and legacy browser support!<br>⚠️ Recent database performance issues, see: https://status.supabase.com/',
+            mapBtn: '🗺️ Back to Map',
+            loginBtn: 'Login / Register',
+            logoutBtn: 'Logout',
+            addPlan: '➕ Add Plan',
+            refresh: '🔄 Refresh',
+            footerNote: 'Data source: Chocolate Server · Construction Plan',
+            authTitle: 'Login / Register',
+            emailLabel: 'Email',
+            passwordLabel: 'Password',
+            emailPlaceholder: 'example@example.com',
+            passwordPlaceholder: 'At least 6 characters',
+            login: 'Login',
+            register: 'Register',
+            cancel: 'Cancel',
+            editTitle: 'Edit Plan',
+            addTitle: 'Add Plan',
+            operatorLabel: 'Operator',
+            lineLabel: 'Line Name',
+            statusLabel: 'Status',
+            targetLabel: 'Target Description',
+            operatorPlaceholder: 'e.g. Steve Rail',
+            linePlaceholder: 'e.g. Line 1',
+            targetPlaceholder: '(Optional) e.g., Planning in progress',
+            save: 'Save',
+            emptyMsg: 'No construction plans yet. Click "Add Plan" to create one.',
+            loadError: 'Failed to load, please refresh.',
+            confirmDelete: 'Are you sure to delete this plan?',
+            fillRequired: 'Please fill in Operator and Line Name.',
+            saveSuccess: 'Saved successfully.',
+            deleteSuccess: 'Deleted successfully.',
+            statusOptions: {
+                '规划中': 'Planning',
+                '建设中': 'Under Construction',
+                '已完成': 'Completed',
+                '暂停': 'Paused'
+            }
+        }
+    };
+
+    // ========== 应用语言 ==========
+    function applyLanguage() {
+        const t = i18n[currentLang];
+        document.getElementById('headerSub').innerHTML = t.headerSub;
+        document.getElementById('mapBtn').textContent = t.mapBtn;
+        document.getElementById('loginBtn').textContent = t.loginBtn;
+        document.getElementById('logoutBtn').textContent = t.logoutBtn;
+        document.getElementById('addPlanBtn').textContent = t.addPlan;
+        document.getElementById('refreshBtn').textContent = t.refresh;
+        document.getElementById('footerNote').textContent = t.footerNote;
+        document.getElementById('authTitle').textContent = t.authTitle;
+        document.getElementById('emailLabel').textContent = t.emailLabel;
+        document.getElementById('passwordLabel').textContent = t.passwordLabel;
+        document.getElementById('authEmail').placeholder = t.emailPlaceholder;
+        document.getElementById('authPassword').placeholder = t.passwordPlaceholder;
+        document.getElementById('authLoginBtn').textContent = t.login;
+        document.getElementById('authRegisterBtn').textContent = t.register;
+        document.getElementById('authModalCancel').textContent = t.cancel;
+        document.getElementById('editModalCancel').textContent = t.cancel;
+        document.getElementById('editModalConfirm').textContent = t.save;
+
+        // edit modal 标题根据模式动态设置，此处只设置通用文本，具体在打开时设置
+        document.getElementById('editOperatorLabel').textContent = t.operatorLabel;
+        document.getElementById('editLineLabel').textContent = t.lineLabel;
+        document.getElementById('editStatusLabel').textContent = t.statusLabel;
+        document.getElementById('editTargetLabel').textContent = t.targetLabel;
+        document.getElementById('editOperator').placeholder = t.operatorPlaceholder;
+        document.getElementById('editLine').placeholder = t.linePlaceholder;
+        document.getElementById('editTarget').placeholder = t.targetPlaceholder;
+
+        // 更新状态下拉框选项
+        const statusSelect = document.getElementById('editStatus');
+        const currentVal = statusSelect.value;
+        const optMap = t.statusOptions;
+        for (let opt of statusSelect.options) {
+            const key = opt.value;
+            if (optMap[key]) {
+                opt.textContent = optMap[key];
+            }
+        }
+        // 恢复选中值
+        statusSelect.value = currentVal;
+
+        // 刷新列表（重新渲染，用到语言）
+        renderPlans();
+
+        // 更新登录横幅和按钮可见性（由认证状态控制，但文字已更新）
+        updateAuthUI();
+    }
+
+    // ========== 认证 ==========
+    let currentUser = null;
+    let plans = [];
+
+    async function checkAuth() {
+        const { data: { session } } = await sb.auth.getSession();
+        if (session) {
+            currentUser = session.user;
+        } else {
+            currentUser = null;
+        }
+        updateAuthUI();
+    }
+
+    function updateAuthUI() {
+        const t = i18n[currentLang];
+        if (currentUser) {
+            document.getElementById('userDisplay').style.display = 'inline';
+            document.getElementById('userDisplay').textContent = `👤 ${currentUser.email}`;
+            document.getElementById('loginBtn').style.display = 'none';
+            document.getElementById('logoutBtn').style.display = 'inline';
+            document.getElementById('logoutBtn').textContent = t.logoutBtn;
+            document.getElementById('addPlanBtn').style.display = 'inline-block';
+        } else {
+            document.getElementById('userDisplay').style.display = 'none';
+            document.getElementById('loginBtn').style.display = 'inline';
+            document.getElementById('loginBtn').textContent = t.loginBtn;
+            document.getElementById('logoutBtn').style.display = 'none';
+            document.getElementById('addPlanBtn').style.display = 'none';
+        }
+    }
+
+    // ========== DOM 引用 ==========
+    const planListEl = document.getElementById('planList');
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const addPlanBtn = document.getElementById('addPlanBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+
+    // Auth modal
+    const authModal = document.getElementById('authModal');
+    const authEmail = document.getElementById('authEmail');
+    const authPassword = document.getElementById('authPassword');
+    const authLoginBtn = document.getElementById('authLoginBtn');
+    const authRegisterBtn = document.getElementById('authRegisterBtn');
+    const authCancelBtn = document.getElementById('authModalCancel');
+    const authCloseBtn = document.getElementById('authModalClose');
+    const authError = document.getElementById('authError');
+
+    // Edit modal
+    const editModal = document.getElementById('editModal');
+    const editId = document.getElementById('editId');
+    const editOperator = document.getElementById('editOperator');
+    const editLine = document.getElementById('editLine');
+    const editStatus = document.getElementById('editStatus');
+    const editTarget = document.getElementById('editTarget');
+    const editModalConfirm = document.getElementById('editModalConfirm');
+    const editModalCancel = document.getElementById('editModalCancel');
+    const editModalClose = document.getElementById('editModalClose');
+
+    // ========== 模态框辅助 ==========
+    function showAuthModal() {
+        authError.textContent = '';
+        authModal.style.display = 'flex';
+        authEmail.value = '';
+        authPassword.value = '';
+    }
+
+    function closeAuthModal() {
+        authModal.style.display = 'none';
+    }
+
+    function showEditModal(id) {
+        if (!currentUser) return;
+        const isEdit = id !== undefined;
+        const t = i18n[currentLang];
+        document.getElementById('editModalTitle').textContent = isEdit ? t.editTitle : t.addTitle;
+
+        if (isEdit) {
+            const plan = plans.find(p => p.id === id);
+            if (!plan) return;
+            editId.value = plan.id;
+            editOperator.value = plan.operator;
+            editLine.value = plan.line_name;
+            editStatus.value = plan.status;
+            editTarget.value = plan.target || '';
+        } else {
+            editId.value = '';
+            editOperator.value = '';
+            editLine.value = '';
+            editStatus.value = '规划中';
+            editTarget.value = '';
+        }
+        editModal.style.display = 'flex';
+    }
+
+    function closeEditModal() {
+        editModal.style.display = 'none';
+    }
+
+    // ========== 数据操作 ==========
+    async function loadPlans() {
+        const { data, error } = await sb
+            .from('construction_plans')
+            .select('*')
+            .order('display_order', { ascending: true })
+            .order('id', { ascending: true });
+        if (error) {
+            console.error('加载失败', error);
+            planListEl.innerHTML = `<div class="empty-msg">${i18n[currentLang].loadError}</div>`;
+            return;
+        }
+        plans = data || [];
+        renderPlans();
+    }
+
+    function renderPlans() {
+        const t = i18n[currentLang];
+        if (!plans.length) {
+            planListEl.innerHTML = `<div class="empty-msg">${t.emptyMsg}</div>`;
+            return;
+        }
+
+        const groups = {};
+        plans.forEach(p => {
+            if (!groups[p.operator]) groups[p.operator] = [];
+            groups[p.operator].push(p);
+        });
+
+        // 状态翻译（用于显示，但数据库存储中文）
+        const statusMap = t.statusOptions;
+
+        let html = '';
+        for (const [operator, items] of Object.entries(groups)) {
+            html += `<div class="group-card">`;
+            html += `<div class="group-title">${operator}</div>`;
+            items.forEach(item => {
+                const statusDisplay = statusMap[item.status] || item.status;
+                const statusClass = getStatusClass(item.status);
+                html += `
+                    <div class="plan-item" data-id="${item.id}">
+                        <div class="plan-info">
+                            <div class="plan-line">${item.line_name}</div>
+                            <div class="plan-target">${item.target || ''}</div>
+                        </div>
+                        <div style="display:flex;align-items:center;flex-wrap:wrap;">
+                            <span class="plan-status ${statusClass}">${statusDisplay}</span>
+                            ${currentUser ? `
+                            <div class="plan-actions">
+                                <button class="edit-btn" data-id="${item.id}">✏️</button>
+                                <button class="del-btn" data-id="${item.id}">🗑️</button>
+                            </div>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+        }
+        planListEl.innerHTML = html;
+
+        if (currentUser) {
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.onclick = () => showEditModal(parseInt(btn.dataset.id));
+            });
+            document.querySelectorAll('.del-btn').forEach(btn => {
+                btn.onclick = () => deletePlan(parseInt(btn.dataset.id));
+            });
+        }
+    }
+
+    function getStatusClass(status) {
+        const map = {
+            '规划中': 'status-planning',
+            '建设中': 'status-building',
+            '已完成': 'status-done',
+            '暂停': 'status-paused'
+        };
+        return map[status] || '';
+    }
+
+    // ========== 保存 & 删除 ==========
+    async function savePlan() {
+        if (!currentUser) return;
+        const id = editId.value;
+        const operator = editOperator.value.trim();
+        const line_name = editLine.value.trim();
+        const status = editStatus.value;
+        const target = editTarget.value.trim();
+        const t = i18n[currentLang];
+
+        if (!operator || !line_name) {
+            alert(t.fillRequired);
+            return;
+        }
+
+        const payload = { operator, line_name, status, target };
+
+        let error = null;
+        if (id) {
+            const { error: e } = await sb
+                .from('construction_plans')
+                .update(payload)
+                .eq('id', parseInt(id));
+            error = e;
+        } else {
+            const { error: e } = await sb
+                .from('construction_plans')
+                .insert([{ ...payload, display_order: 0 }]);
+            error = e;
+        }
+
+        if (error) {
+            alert(t.saveSuccess + '? ' + error.message); // 偷懒，但显示错误
+            return;
+        }
+        alert(t.saveSuccess);
+        closeEditModal();
+        await loadPlans();
+    }
+
+    async function deletePlan(id) {
+        if (!currentUser) return;
+        const t = i18n[currentLang];
+        if (!confirm(t.confirmDelete)) return;
+        const { error } = await sb
+            .from('construction_plans')
+            .delete()
+            .eq('id', id);
+        if (error) {
+            alert(t.deleteSuccess + '? ' + error.message);
+            return;
+        }
+        alert(t.deleteSuccess);
+        await loadPlans();
+    }
+
+    // ========== 事件绑定 ==========
+    // Auth
+    loginBtn.onclick = showAuthModal;
+    logoutBtn.onclick = async () => {
+        await sb.auth.signOut();
+        currentUser = null;
+        updateAuthUI();
+        await loadPlans();
+    };
+    authLoginBtn.onclick = async () => {
+        const email = authEmail.value;
+        const password = authPassword.value;
+        if (!email || !password) {
+            authError.textContent = i18n[currentLang].fillRequired || '请填写邮箱和密码';
+            return;
+        }
+        const { data, error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) {
+            authError.textContent = error.message;
+            return;
+        }
+        if (data.user) {
+            currentUser = data.user;
+            updateAuthUI();
+            closeAuthModal();
+            await loadPlans();
+        }
+    };
+    authRegisterBtn.onclick = async () => {
+        const email = authEmail.value;
+        const password = authPassword.value;
+        if (!email || !password) {
+            authError.textContent = i18n[currentLang].fillRequired || '请填写邮箱和密码';
+            return;
+        }
+        if (password.length < 6) {
+            authError.textContent = i18n[currentLang].passwordPlaceholder || '密码至少6位';
+            return;
+        }
+        const { data, error } = await sb.auth.signUp({ email, password });
+        if (error) {
+            authError.textContent = error.message;
+            return;
+        }
+        if (data.user) {
+            alert(i18n[currentLang].register + ' success, please login.');
+            await authLoginBtn.click(); // 自动登录
+        }
+    };
+    authCancelBtn.onclick = closeAuthModal;
+    authCloseBtn.onclick = closeAuthModal;
+    window.onclick = (e) => {
+        if (e.target === authModal) closeAuthModal();
+        if (e.target === editModal) closeEditModal();
+    };
+
+    // Edit
+    addPlanBtn.onclick = () => showEditModal();
+    editModalConfirm.onclick = savePlan;
+    editModalCancel.onclick = closeEditModal;
+    editModalClose.onclick = closeEditModal;
+
+    // Refresh
+    refreshBtn.onclick = loadPlans;
+
+    // Language
+    document.getElementById('langSelect').addEventListener('change', (e) => {
+        currentLang = e.target.value;
+        applyLanguage();
+    });
+
+    // ========== 初始化 ==========
+    (async function init() {
+        await checkAuth();
+        await loadPlans();
+        // 应用语言（默认中文）
+        document.getElementById('langSelect').value = 'zh';
+        applyLanguage();
+    })();
+</script>
+</body>
+</html>
